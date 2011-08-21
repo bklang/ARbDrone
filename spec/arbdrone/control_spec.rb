@@ -156,4 +156,11 @@ describe ARbDrone::Control do
       @drone.reset_trim
     end
   end
+
+  describe '#set_option' do
+    it 'should enclose variable names and values in double-quotes' do
+      flexmock(@socket).should_receive(:send).once.with("AT*CONFIG=1,\"name\",\"value\"\n")
+      @drone.set_option('name', 'value')
+    end
+  end
 end
