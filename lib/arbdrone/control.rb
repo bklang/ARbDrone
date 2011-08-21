@@ -1,5 +1,5 @@
 require 'socket'
-require 'mutex'
+require 'thread'
 
 module ARbDrone
   class Control
@@ -9,7 +9,9 @@ module ARbDrone
     # set to 1. Other bits should be set to 0.
     REF_CONST = 290717696
 
-    def initialize(drone_ip = '192.168.0.1', drone_port = '5556')
+    attr_accessor :seq
+
+    def initialize(drone_ip = '192.168.0.1', drone_port = 5556)
       @socket = UDPSocket.new
       @socket.connect(drone_ip, drone_port)
       @mutex = Mutex.new
@@ -18,7 +20,7 @@ module ARbDrone
 
     def next_seq
       @mutex.synchronize do
-        @seq = @seq.nil? 1 : @seq + 1
+        @seq = @seq.nil? ? 1 : @seq + 1
       end
     end
 
@@ -38,17 +40,34 @@ module ARbDrone
       send_cmd ref(input)
     end
 
-    def ref(input)
-      input |= REF_CONST
-      "AT*REF,#{next_seq},#{input}"
+    def hover
+      # Set bit zero to zero to make the drone enter hovering mode
+      flags = 0
+      pcmd flags, 0, 0, 0, 0
     end
 
-    def pcmd(flag, phi, theta, gaz, yaw)
+    def steer(phi, theta, gaz, yaw)
+      # Set bit zero to one to make the drone process inputs
+      flags = 1 << 0
+      pcmd flags, theta, gaz, yaw
+    end
+
+    def ref(input)
+      input |= REF_CONST
+      "AT*REF=#{next_seq},#{input}"
+    end
+
+    def pcmd(flags, phi, theta, gaz, yaw)
+      phi, theta, gaz, yaw = minmax -1.0, 1.0, phi, theta, gaz, yaw 
+      "AT*PCMD=#{next_seq},#{flags},#{phi},#{theta},#{gaz},#{yaw}"
     end
 
     def shutdown!
       @seq = nil
     end  
 
+    def minmax(min, max, *args)
+      args.map {|arg| arg < min ? -1.0 : arg > max ? 1.0 : arg }
+    end
   end
 end
