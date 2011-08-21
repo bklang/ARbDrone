@@ -43,13 +43,13 @@ module ARbDrone
     def hover
       # Set bit zero to zero to make the drone enter hovering mode
       flags = 0
-      pcmd flags, 0, 0, 0, 0
+      send_cmd pcmd(flags, 0, 0, 0, 0)
     end
 
     def steer(phi, theta, gaz, yaw)
       # Set bit zero to one to make the drone process inputs
       flags = 1 << 0
-      pcmd flags, theta, gaz, yaw
+      send_cmd pcmd(flags, phi, theta, gaz, yaw)
     end
 
     def ref(input)
