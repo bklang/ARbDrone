@@ -60,6 +60,18 @@ module ARbDrone
       send_cmd 'AT*CONFIG', "\"#{name}\",\"#{value}\""
     end
 
+    def heartbeat
+      send_cmd 'AT*COMWDG'
+    end
+
+    def blink(animation, frequency, duration)
+      send_cmd 'AT*LED', "#{animation},#{frequency},#{duration}"
+    end
+
+    def dance(animation, duration)
+      send_cmd 'AT*ANIM', "#{animation},#{duration}"
+    end
+
     def ref(input)
       input |= REF_CONST
       ['AT*REF', input]

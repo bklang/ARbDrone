@@ -157,6 +157,27 @@ describe ARbDrone::Control do
     end
   end
 
+  describe '#heartbeat' do
+    it 'should generate the correct command' do
+      flexmock(@socket).should_receive(:send).once.with("AT*COMWDG=1,\n")
+      @drone.heartbeat
+    end
+  end
+
+  describe '#blink' do
+    it 'should generate the correct command' do
+      flexmock(@socket).should_receive(:send).once.with("AT*LED=1,2,3,4\n")
+      @drone.blink 2,3,4
+    end
+  end
+
+  describe '#dance' do
+    it 'should generate the correct command' do
+      flexmock(@socket).should_receive(:send).once.with("AT*ANIM=1,2,3\n")
+      @drone.dance 2,3
+    end
+  end
+
   describe '#set_option' do
     it 'should enclose variable names and values in double-quotes' do
       flexmock(@socket).should_receive(:send).once.with("AT*CONFIG=1,\"name\",\"value\"\n")
