@@ -41,8 +41,8 @@ describe ARbDrone::Control do
 
   describe '#send_cmd' do
     it 'should append a newline after each statement' do
-      flexmock(@socket).should_receive(:send).once.with("AT*REF\n")
-      @drone.send_cmd('AT*REF')
+      flexmock(@socket).should_receive(:send).once.with("AT*FAKE=1,\n")
+      @drone.send_cmd('AT*FAKE')
     end
   end
 
@@ -59,19 +59,19 @@ describe ARbDrone::Control do
     end
 
     it 'should set the constant bits in the input' do
-      @drone.ref(0).should == "AT*REF=1,#{@flags}"
+      @drone.ref(0).should == ['AT*REF', @flags]
     end
 
     it 'should preserve input bits' do
       input = 1 << 8
       flags = @flags | input
-      @drone.ref(input).should == "AT*REF=1,#{flags}"
+      @drone.ref(input).should == ['AT*REF', flags]
     end
 
     it 'should increment the sequence number on subsequent calls' do
-      @drone.ref(0).should == "AT*REF=1,#{@flags}"
-      @drone.ref(0).should == "AT*REF=2,#{@flags}"
-      @drone.ref(0).should == "AT*REF=3,#{@flags}"
+      @drone.ref(0).should == ['AT*REF', @flags]
+      @drone.ref(0).should == ['AT*REF', @flags]
+      @drone.ref(0).should == ['AT*REF', @flags]
     end
   end
 
@@ -82,11 +82,11 @@ describe ARbDrone::Control do
     end
 
     it 'should format the arguments' do
-      @drone.pcmd(1, -0.9, -0.5, 0.2, 0.7).should == "AT*PCMD=1,1,-0.9,-0.5,0.2,0.7"
+      @drone.pcmd(1, -0.9, -0.5, 0.2, 0.7).should == ['AT*PCMD', '1,-0.9,-0.5,0.2,0.7']
     end
 
     it 'should limit inputs that exceed the min/max' do
-      @drone.pcmd(1, -1.9, -1.5, 1.2, 1.7).should == "AT*PCMD=1,1,-1.0,-1.0,1.0,1.0"
+      @drone.pcmd(1, -1.9, -1.5, 1.2, 1.7).should == ['AT*PCMD', '1,-1.0,-1.0,1.0,1.0']
     end
   end
 
@@ -147,6 +147,13 @@ describe ARbDrone::Control do
     it 'should generate the correct command' do
       flexmock(@socket).should_receive(:send).once.with("AT*PCMD=1,0,0,0,0,0\n")
       @drone.hover
+    end
+  end
+
+  describe '#reset_trim' do
+    it 'should generate the correct command' do
+      flexmock(@socket).should_receive(:send).once.with("AT*FTRIM=1,\n")
+      @drone.reset_trim
     end
   end
 end
