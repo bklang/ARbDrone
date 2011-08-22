@@ -2,9 +2,11 @@ require 'spec_helper'
 require 'arbdrone/control'
 
 class UDPSocket
-  def send(data, flags = 0)
-    true
-  end
+  # Override UDPSocket for tests so we don't actually
+  # generate any network traffic.
+  def bind(*args); end
+  def connect(*args); end
+  def send(data, flags = 0); end
 end
 
 describe ARbDrone::Control do
