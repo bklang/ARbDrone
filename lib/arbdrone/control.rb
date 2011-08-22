@@ -96,7 +96,7 @@ module ARbDrone
     end  
 
     def minmax(min, max, *args)
-      args.map {|arg| arg < min ? -1.0 : arg > max ? 1.0 : arg }
+      args.map {|arg| arg < min ? min : arg > max ? max : arg }
     end
   end
 end
