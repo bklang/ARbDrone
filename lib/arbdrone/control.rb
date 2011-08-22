@@ -24,7 +24,7 @@ module ARbDrone
 
     def send_cmd(cmd, data = nil)
       @mutex.synchronize do
-        @socket.send "#{cmd}=#{next_seq},#{data}\n"
+        @socket.send "#{cmd}=#{next_seq},#{data}\n", 0
       end
     end
 
@@ -78,8 +78,16 @@ module ARbDrone
     end
 
     def pcmd(flags, phi, theta, gaz, yaw)
+      values = [flags]
+
+      # Ensure the inputs do not exceed [-1.0, 1.0]
       phi, theta, gaz, yaw = minmax -1.0, 1.0, phi, theta, gaz, yaw 
-      ['AT*PCMD', "#{flags},#{phi},#{theta},#{gaz},#{yaw}"]
+
+      # Convert the values to IEEE 754, then cast to a signed int
+      values += [phi, theta, gaz, yaw].map { |v|
+        [v].pack('e').unpack('l').first
+      }
+      ['AT*PCMD', values.join(',')]
     end
 
     def shutdown!

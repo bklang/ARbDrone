@@ -1,8 +1,8 @@
 require 'spec_helper'
 require 'arbdrone/control'
 
-class MockSocket < UDPSocket
-  def send(data)
+class UDPSocket
+  def send(data, flags = 0)
     true
   end
 end
@@ -41,7 +41,7 @@ describe ARbDrone::Control do
 
   describe '#send_cmd' do
     it 'should append a newline after each statement' do
-      flexmock(@socket).should_receive(:send).once.with("AT*FAKE=1,\n")
+      flexmock(@socket).should_receive(:send).once.with("AT*FAKE=1,\n", 0)
       @drone.send_cmd('AT*FAKE')
     end
   end
@@ -82,11 +82,11 @@ describe ARbDrone::Control do
     end
 
     it 'should format the arguments' do
-      @drone.pcmd(1, -0.9, -0.5, 0.2, 0.7).should == ['AT*PCMD', '1,-0.9,-0.5,0.2,0.7']
+      @drone.pcmd(1, -0.9, -0.5, 0.2, 0.7).should == ['AT*PCMD', '1,-1083808154,-1090519040,1045220557,1060320051']
     end
 
     it 'should limit inputs that exceed the min/max' do
-      @drone.pcmd(1, -1.9, -1.5, 1.2, 1.7).should == ['AT*PCMD', '1,-1.0,-1.0,1.0,1.0']
+      @drone.pcmd(1, -1.9, -1.5, 1.2, 1.7).should == ['AT*PCMD', '1,-1082130432,-1082130432,1065353216,1065353216']
     end
   end
 
@@ -116,7 +116,7 @@ describe ARbDrone::Control do
     end
 
     it 'should generate the correct command' do
-      flexmock(@socket).should_receive(:send).once.with("AT*REF=1,290718208\n")
+      flexmock(@socket).should_receive(:send).once.with("AT*REF=1,290718208\n", 0)
       @drone.takeoff
     end
   end
@@ -127,60 +127,56 @@ describe ARbDrone::Control do
     end
 
     it 'should generate the correct command' do
-      flexmock(@socket).should_receive(:send).once.with("AT*REF=1,290717696\n")
+      flexmock(@socket).should_receive(:send).once.with("AT*REF=1,290717696\n", 0)
       @drone.land
     end
   end
 
   describe '#steer' do
-    before :each do
-      @drone.seq = nil
-    end
-
     it 'should generate the correct command' do
-      flexmock(@socket).should_receive(:send).once.with("AT*PCMD=1,1,0.5,0.2,-0.1,-0.3\n")
+      flexmock(@drone).should_receive(:pcmd).once.with(1, 0.5, 0.2, -0.1, -0.3).and_return ['AT*PCMD', '1,0,0,0,0']
       @drone.steer 0.5, 0.2, -0.1, -0.3
     end
   end
 
   describe '#hover' do
     it 'should generate the correct command' do
-      flexmock(@socket).should_receive(:send).once.with("AT*PCMD=1,0,0,0,0,0\n")
+      flexmock(@socket).should_receive(:send).once.with("AT*PCMD=1,0,0,0,0,0\n", 0)
       @drone.hover
     end
   end
 
   describe '#reset_trim' do
     it 'should generate the correct command' do
-      flexmock(@socket).should_receive(:send).once.with("AT*FTRIM=1,\n")
+      flexmock(@socket).should_receive(:send).once.with("AT*FTRIM=1,\n", 0)
       @drone.reset_trim
     end
   end
 
   describe '#heartbeat' do
     it 'should generate the correct command' do
-      flexmock(@socket).should_receive(:send).once.with("AT*COMWDG=1,\n")
+      flexmock(@socket).should_receive(:send).once.with("AT*COMWDG=1,\n", 0)
       @drone.heartbeat
     end
   end
 
   describe '#blink' do
     it 'should generate the correct command' do
-      flexmock(@socket).should_receive(:send).once.with("AT*LED=1,2,3,4\n")
+      flexmock(@socket).should_receive(:send).once.with("AT*LED=1,2,3,4\n", 0)
       @drone.blink 2,3,4
     end
   end
 
   describe '#dance' do
     it 'should generate the correct command' do
-      flexmock(@socket).should_receive(:send).once.with("AT*ANIM=1,2,3\n")
+      flexmock(@socket).should_receive(:send).once.with("AT*ANIM=1,2,3\n", 0)
       @drone.dance 2,3
     end
   end
 
   describe '#set_option' do
     it 'should enclose variable names and values in double-quotes' do
-      flexmock(@socket).should_receive(:send).once.with("AT*CONFIG=1,\"name\",\"value\"\n")
+      flexmock(@socket).should_receive(:send).once.with("AT*CONFIG=1,\"name\",\"value\"\n", 0)
       @drone.set_option('name', 'value')
     end
   end
