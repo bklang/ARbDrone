@@ -5,7 +5,7 @@ Ruby Library for the Parrot AR.Drone
 ------------------------------------
 
 ARbDrone is a native Ruby implementation of the protocols necessary to control
-the [http://ardrone.parrot.com/](Parrot AR.Drone).
+the [Parrot AR.Drone](http://ardrone.parrot.com/).
 
 This library is brand new and will take some time to mature.  Current work
 is focused around the flight control commands and navdata.  Video support
