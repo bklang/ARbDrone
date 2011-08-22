@@ -13,7 +13,8 @@ module ARbDrone
 
     def initialize(drone_ip = '192.168.0.1', drone_port = 5556)
       @socket = UDPSocket.new
-      @socket.connect(drone_ip, drone_port)
+      @socket.bind '0.0.0.0', drone_port
+      @socket.connect drone_ip, drone_port
       @mutex = Mutex.new
       @state = :off
     end
