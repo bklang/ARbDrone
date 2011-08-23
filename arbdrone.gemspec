@@ -20,6 +20,7 @@ Gem::Specification.new do |s|
 
   # Runtime dependencies
   s.add_runtime_dependency "bundler", [">= 1.0.10"]
+  s.add_runtime_dependency "eventmachine"
   s.add_runtime_dependency "log4r", [">= 1.0.5"]
   s.add_runtime_dependency "activesupport", [">= 3.0.0"]
   # i18n is only strictly a dependency for ActiveSupport >= 3.0.0

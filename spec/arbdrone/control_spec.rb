@@ -1,50 +1,52 @@
 require 'spec_helper'
 require 'arbdrone/control'
 
-class UDPSocket
-  # Override UDPSocket for tests so we don't actually
-  # generate any network traffic.
-  def bind(*args); end
-  def connect(*args); end
-  def send(data, flags = 0); end
+class Drone
+  include ARbDrone::Control
 end
 
 describe ARbDrone::Control do
   before :each do
-    @drone  = ARbDrone::Control.new
-    @socket = @drone.instance_variable_get(:@socket)
+    @drone  = Drone.new
   end
 
   after :each do
     @drone  = nil
-    @socket = nil
-  end
-
-  it 'should set the correct default drone IP and port' do
-    sock = UDPSocket.new
-    flexmock(UDPSocket).should_receive(:new).once.and_return(sock)
-    flexmock(sock).should_receive(:connect).once.with('192.168.0.1', 5556)
-    ARbDrone::Control.new
   end
 
   describe '#next_seq' do
     it 'should default the sequence number to 1' do
-      drone = ARbDrone::Control.new
+      drone = Drone.new
       drone.next_seq.should == 1
     end
 
     it 'should increment the sequence number on subsequent calls' do
-      drone = ARbDrone::Control.new
+      drone = Drone.new
       drone.next_seq.should == 1
-      drone.next_seq.should == 2
-      drone.next_seq.should == 3
+      seq = drone.next_seq
+      seq.should > 1
+      seq_again = drone.next_seq
+      seq_again.should > seq
     end
   end
 
-  describe '#send_cmd' do
-    it 'should append a newline after each statement' do
-      flexmock(@socket).should_receive(:send).once.with("AT*FAKE=1,\n", 0)
-      @drone.send_cmd('AT*FAKE')
+  describe '#format_cmd' do
+    before :each do
+      @drone.seq = nil
+    end
+
+    it 'should append a sequence number and newline after each statement' do
+      @drone.format_cmd('AT*FAKE').should == "AT*FAKE=1,\n"
+    end
+
+    it 'should format a data argument correctly' do
+      @drone.format_cmd('AT*FAKE', '"name","value"').should == "AT*FAKE=1,\"name\",\"value\"\n"
+    end
+
+    it 'should properly increment the sequence number' do
+      @drone.format_cmd('AT*FAKE', '"name","value"').should == "AT*FAKE=1,\"name\",\"value\"\n"
+      @drone.format_cmd('AT*FAKE', '1,2,3').should == "AT*FAKE=2,1,2,3\n"
+      @drone.format_cmd('AT*FAKE', '"name","value"').should == "AT*FAKE=3,\"name\",\"value\"\n"
     end
   end
 
@@ -118,8 +120,7 @@ describe ARbDrone::Control do
     end
 
     it 'should generate the correct command' do
-      flexmock(@socket).should_receive(:send).once.with("AT*REF=1,290718208\n", 0)
-      @drone.takeoff
+      @drone.takeoff.should == "AT*REF=1,290718208\n"
     end
   end
 
@@ -129,8 +130,7 @@ describe ARbDrone::Control do
     end
 
     it 'should generate the correct command' do
-      flexmock(@socket).should_receive(:send).once.with("AT*REF=1,290717696\n", 0)
-      @drone.land
+      @drone.land.should == "AT*REF=1,290717696\n"
     end
   end
 
@@ -143,43 +143,37 @@ describe ARbDrone::Control do
 
   describe '#hover' do
     it 'should generate the correct command' do
-      flexmock(@socket).should_receive(:send).once.with("AT*PCMD=1,0,0,0,0,0\n", 0)
-      @drone.hover
+      @drone.hover.should == "AT*PCMD=1,0,0,0,0,0\n"
     end
   end
 
   describe '#reset_trim' do
     it 'should generate the correct command' do
-      flexmock(@socket).should_receive(:send).once.with("AT*FTRIM=1,\n", 0)
-      @drone.reset_trim
+      @drone.reset_trim.should == "AT*FTRIM=1,\n"
     end
   end
 
   describe '#heartbeat' do
     it 'should generate the correct command' do
-      flexmock(@socket).should_receive(:send).once.with("AT*COMWDG=1,\n", 0)
-      @drone.heartbeat
+      @drone.heartbeat.should == "AT*COMWDG=1,\n"
     end
   end
 
   describe '#blink' do
     it 'should generate the correct command' do
-      flexmock(@socket).should_receive(:send).once.with("AT*LED=1,2,3,4\n", 0)
-      @drone.blink 2,3,4
+      @drone.blink(2,3,4).should == "AT*LED=1,2,3,4\n"
     end
   end
 
   describe '#dance' do
     it 'should generate the correct command' do
-      flexmock(@socket).should_receive(:send).once.with("AT*ANIM=1,2,3\n", 0)
-      @drone.dance 2,3
+      @drone.dance(2,3).should == "AT*ANIM=1,2,3\n"
     end
   end
 
   describe '#set_option' do
     it 'should enclose variable names and values in double-quotes' do
-      flexmock(@socket).should_receive(:send).once.with("AT*CONFIG=1,\"name\",\"value\"\n", 0)
-      @drone.set_option('name', 'value')
+      @drone.set_option('name', 'value').should == "AT*CONFIG=1,\"name\",\"value\"\n"
     end
   end
 end
