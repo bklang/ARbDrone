@@ -9,6 +9,7 @@ class ARbDrone
     @drone_navdata_port = options.delete(:drone_navdata_port) || 5554
     @drone_video_port   = options.delete(:drone_video_port)   || 5555
     @drone_control_port = options.delete(:drone_control_port) || 5556
+    @listen_ip          = options.delete(:listen_ip)          || '0.0.0.0'
   end
 
   def run
@@ -20,7 +21,7 @@ class ARbDrone
   end
 
   def run_control
-    @connection = EventMachine.open_datagram_socket '0.0.0.0', 5550, Control
+    @connection = EventMachine.open_datagram_socket @listen_ip, @drone_control_port, Control
     @connection.setup @drone_ip, @drone_control_port
     @control_timer = EventMachine.add_periodic_timer 0.02 do
       @connection.send_queued_messages
