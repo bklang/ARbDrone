@@ -98,6 +98,18 @@ class ARbDrone
       ['AT*REF', input]
     end
 
+    # Used primarily to keep the control connection alive
+    # The drone expects a packet at least every 50ms or it
+    # triggers the watchdog.  After 2 seconds the connection
+    # is considered lost.
+    def noop
+      push format_cmd *ref(0)
+    end
+
+    def float2int(float)
+      [float.to_f].pack('e').unpack('l').first
+    end
+
     def pcmd(flags, phi, theta, gaz, yaw)
       values = [flags]
 
@@ -106,7 +118,7 @@ class ARbDrone
 
       # Convert the values to IEEE 754, then cast to a signed int
       values += [phi, theta, gaz, yaw].map { |v|
-        [v].pack('e').unpack('l').first
+        float2int v
       }
       ['AT*PCMD', values.join(',')]
     end
