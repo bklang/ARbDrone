@@ -1,7 +1,7 @@
 require 'socket'
 require 'thread'
 
-module ARbDrone
+class ARbDrone
   module Control
 
     # With SDK version 1.5, only bits 8 and 9 are used in the
@@ -11,19 +11,16 @@ module ARbDrone
 
     attr_accessor :seq
 
-    def setup(options)
-      @options = options
+    def setup(drone_ip, drone_control_port)
+      @drone_ip, @drone_control_port = drone_ip, drone_control_port
       @send_queue = []
       @send_mutex = Mutex.new
     end
 
-    def <<(msg)
+    def push(msg)
       @send_queue << msg
     end
-
-    def receive_data(data)
-      puts "Received data: #{data.inspect}"
-    end
+    alias :<< :push
 
     def send_queued_messages
       msg = ''
@@ -31,11 +28,11 @@ module ARbDrone
         msg << @send_queue.shift
       end
       if msg.empty?
-        # TODO Send keepalive
+        send_datagram noop, @drone_ip, @drone_control_port
       else
         # Send control input
         @send_mutex.synchronize do
-          send_datagram(msg, @options[:drone_ip], @options[:drone_control_port]) unless msg.empty?
+          send_datagram(msg, @drone_ip, @drone_control_port) unless msg.empty?
         end
       end
     end
@@ -48,48 +45,52 @@ module ARbDrone
       "#{cmd}=#{next_seq},#{data}\n"
     end
 
+    def toggle_state
+      push format_cmd *ref
+    end
+
     def takeoff
       # Bit 9 is 1 for takeoff
       input = 1 << 9
-      format_cmd *ref(input)
+      push format_cmd *ref(input)
     end
 
     def land
       # Bit 9 is 0 for takeoff
       input = 0 << 9
-      format_cmd *ref(input)
+      push format_cmd *ref(input)
     end
 
     def hover
       # Set bit zero to zero to make the drone enter hovering mode
       flags = 0
-      format_cmd *pcmd(flags, 0, 0, 0, 0)
+      push format_cmd *pcmd(flags, 0, 0, 0, 0)
     end
 
     def steer(phi, theta, gaz, yaw)
       # Set bit zero to one to make the drone process inputs
       flags = 1 << 0
-      format_cmd *pcmd(flags, phi, theta, gaz, yaw)
+      push format_cmd *pcmd(flags, phi, theta, gaz, yaw)
     end
 
     def reset_trim
-      format_cmd 'AT*FTRIM'
+      push format_cmd 'AT*FTRIM'
     end
 
     def set_option(name, value)
-      format_cmd 'AT*CONFIG', "\"#{name}\",\"#{value}\""
+      push format_cmd 'AT*CONFIG', "\"#{name}\",\"#{value}\""
     end
 
     def heartbeat
-      format_cmd 'AT*COMWDG'
+      push format_cmd 'AT*COMWDG'
     end
 
     def blink(animation, frequency, duration)
-      format_cmd 'AT*LED', "#{animation},#{frequency},#{duration}"
+      push format_cmd 'AT*LED', "#{animation},#{float2int frequency},#{duration}"
     end
 
     def dance(animation, duration)
-      format_cmd 'AT*ANIM', "#{animation},#{duration}"
+      push format_cmd 'AT*ANIM', "#{animation},#{duration}"
     end
 
     def ref(input)
