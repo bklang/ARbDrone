@@ -102,6 +102,10 @@ class ARbDrone
       end
     end
 
+    def in_bootstrap?
+      @drone_state & STATE[:navdata_bootstrap] > 0
+    end
+
     def is_flying?
       @drone_state & STATE[:flying] > 0
     end
