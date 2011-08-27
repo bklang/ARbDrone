@@ -46,7 +46,7 @@ class ARbDrone
     end
 
     def toggle_state
-      push format_cmd *ref
+      push format_cmd *ref(1<<8)
     end
 
     def takeoff
