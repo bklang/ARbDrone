@@ -39,9 +39,9 @@ class ARbDrone
   end
 
   def run_control_config
-    connection = EventMachine.start_server '0.0.0.0', @drone_tcp_control_port, TcpControl
-    connection.control_channel = @control
-    connection
+    EventMachine.start_server '0.0.0.0', @drone_tcp_control_port, TcpControl do |c|
+      c.control_channel = @control
+    end
   end
 
   def stop_control
