@@ -40,7 +40,7 @@ class ARbDrone
         msg << @send_queue.shift
       end
       if msg.empty?
-        send_datagram noop, @drone_ip, @drone_control_port
+        send_datagram noop_msg, @drone_ip, @drone_control_port
       else
         # Send control input
         @send_mutex.synchronize do
@@ -118,8 +118,12 @@ class ARbDrone
     # The drone expects a packet at least every 50ms or it
     # triggers the watchdog.  After 2 seconds the connection
     # is considered lost.
+    def noop_msg
+      format_cmd *ref(0)
+    end
+
     def noop
-      push format_cmd *ref(0)
+      push noop_msg
     end
 
     def float2int(float)
