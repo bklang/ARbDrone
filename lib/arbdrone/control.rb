@@ -54,7 +54,7 @@ class ARbDrone
     end
 
     def format_cmd(cmd, data = nil)
-      "#{cmd}=#{next_seq},#{data}\n"
+      "#{cmd}=#{next_seq},#{data}\r"
     end
 
     def toggle_state
