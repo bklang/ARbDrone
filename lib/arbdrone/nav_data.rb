@@ -59,33 +59,34 @@ class ARbDrone
       last_state = @drone_state
 
       ptr = 0
-      @header, @drone_state, @seq, @vision_flag = msg[ptr,32].unpack('VVVV')
-      ptr += 32
+      @header, @drone_state, @seq, @vision_flag = msg[ptr,16].unpack('VVVV')
+      ptr += 16
 
       compare_states last_state, @drone_state
 
       options = []
       while ptr < msg.length
-        option_id = msg[ptr].unpack('v').first
+        option_id = msg[ptr,2].unpack('v').first
         ptr += 2
+
+        length = msg[ptr,2].unpack('v').first
+        ptr += 2
+
+        # Length appears to be number of 16-bit ints
+        data = msg[ptr, length*2]
+        ptr += length*2
 
         unless TAGS.keys.include?(option_id)
-          puts "Found invalid options id: #{option_id.inspect}"
+          puts "Found invalid options id: 0x%x" % option_id.inspect
           next
         end
-
-        length = msg[ptr].unpack('v').first
-        ptr += 2
 
         unless length > 0
           puts "Found option with invalid 0 length"
-          next
+          break
         end
 
-        data = msg[ptr, length]
-        ptr += length
-
-        puts "Decoded option #{TAGS[option_id]} with value #{data.inspect}"
+        #puts "Decoded option #{TAGS[option_id]} with value #{data.inspect}"
         options.push :id => option_id, :length => length, :data => data
       end
       # Checksum is always the last option sent
