@@ -9,6 +9,16 @@ class ARbDrone
     # set to 1. Other bits should be set to 0.
     REF_CONST = 290717696
 
+    CONTROL_MODES = {
+      :none            => 0, # Doing nothing
+      :ardone_update   => 1, # Deprecated - AR.Drone software update reception (update is done next run). After event completion, card should be powered off.
+      :pic_update      => 2, # AR.Drone PIC software update reception (update is done next run)
+      :get_log         => 3, # Send previous run's logs
+      :get_cfg         => 4, # Send active configuration file to a client through the 'control' TCP socket
+      :ack             => 5, # Reset command mask in NavData
+      :custom_cfg_get  => 6, # Send list of custom configuration IDs
+    }
+
     attr_accessor :seq
 
     def setup(drone_ip, drone_control_port)
@@ -95,6 +105,11 @@ class ARbDrone
 
     def set_option(name, value)
       push format_cmd 'AT*CONFIG', "\"#{name}\",\"#{value}\""
+    end
+
+    def drone_control(mode, something = 0)
+      # FIXME: What is the purpose of the second argument?
+      push format_cmd 'AT*CTRL', "#{mode},#{something}"
     end
 
     def heartbeat
