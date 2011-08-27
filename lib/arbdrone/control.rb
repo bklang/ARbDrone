@@ -77,6 +77,10 @@ class ARbDrone
       push format_cmd 'AT*FTRIM'
     end
 
+    def config_ids(sess_id, user_id, app_id)
+      push format_cmd 'AT*CONFIG_IDS', "#{sess_id},#{user_id},#{app_id}"
+    end
+
     def set_option(name, value)
       push format_cmd 'AT*CONFIG', "\"#{name}\",\"#{value}\""
     end
