@@ -15,6 +15,18 @@ class ARbDrone
       @drone_ip, @drone_control_port = drone_ip, drone_control_port
       @send_queue = []
       @send_mutex = Mutex.new
+
+      # FIXME: Do we want to send these commands? These are not well documented.
+      # The following two lines are sent by the Linux example utility, ardrone_navigation
+      # as the first two messages sent to the drone at initialization.
+      #push format_cmd 'AT*PMODE', 2
+      #push format_cmd 'AT*MISC', '2,20,2000,3000'
+
+      # Tell the Drone to hover in case it is already in-flight
+      hover
+
+      # Invalidate all other controller sessions
+      set_option 'custom:session_id', '-all'
     end
 
     def push(msg)
