@@ -20,8 +20,6 @@ class ARbDrone
       :custom_cfg_get  => 6, # Send list of custom configuration IDs
     }
 
-    attr_accessor :seq
-
     def setup(drone_ip, drone_control_port, options = {})
       @drone_ip, @drone_control_port = drone_ip, drone_control_port
       @send_queue = []
@@ -79,7 +77,7 @@ class ARbDrone
 
     def takeoff
       # Bit 9 is 1 for takeoff
-      @drone_state |= 1 << 9
+      @drone_state = 1 << 9
     end
 
     def land

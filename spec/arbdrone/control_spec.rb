@@ -2,16 +2,17 @@ require 'spec_helper'
 require 'arbdrone/control'
 
 class Drone
+  attr_accessor :seq, :send_queue
+
   include ARbDrone::Control
 end
 
 describe ARbDrone::Control do
   before :each do
     @drone  = Drone.new
-  end
-
-  after :each do
-    @drone  = nil
+    @drone.setup(0,0)
+    @drone.send_queue = []
+    @drone.seq = nil
   end
 
   describe '#next_seq' do
@@ -36,17 +37,17 @@ describe ARbDrone::Control do
     end
 
     it 'should append a sequence number and newline after each statement' do
-      @drone.format_cmd('AT*FAKE').should == "AT*FAKE=1,\n"
+      @drone.format_cmd('AT*FAKE').should == "AT*FAKE=1,\r"
     end
 
     it 'should format a data argument correctly' do
-      @drone.format_cmd('AT*FAKE', '"name","value"').should == "AT*FAKE=1,\"name\",\"value\"\n"
+      @drone.format_cmd('AT*FAKE', '"name","value"').should == "AT*FAKE=1,\"name\",\"value\"\r"
     end
 
     it 'should properly increment the sequence number' do
-      @drone.format_cmd('AT*FAKE', '"name","value"').should == "AT*FAKE=1,\"name\",\"value\"\n"
-      @drone.format_cmd('AT*FAKE', '1,2,3').should == "AT*FAKE=2,1,2,3\n"
-      @drone.format_cmd('AT*FAKE', '"name","value"').should == "AT*FAKE=3,\"name\",\"value\"\n"
+      @drone.format_cmd('AT*FAKE', '"name","value"').should == "AT*FAKE=1,\"name\",\"value\"\r"
+      @drone.format_cmd('AT*FAKE', '1,2,3').should == "AT*FAKE=2,1,2,3\r"
+      @drone.format_cmd('AT*FAKE', '"name","value"').should == "AT*FAKE=3,\"name\",\"value\"\r"
     end
   end
 
@@ -113,24 +114,34 @@ describe ARbDrone::Control do
     end
   end
 
-  describe '#takeoff' do
+  describe '#state_msg' do
     before :each do
-      # Reset the sequence number on each iteration.
       @drone.seq = nil
     end
 
-    it 'should generate the correct command' do
-      @drone.takeoff.should == "AT*REF=1,290718208\n"
+    it 'should generate the correct message when landed' do
+      @drone.instance_variable_set(:@drone_state, 0)
+      @drone.state_msg.should == "AT*REF=1,290717696\r"
+    end
+
+    it 'should generate the correct message when flying' do
+      flight = 1 << 9
+      @drone.instance_variable_set(:@drone_state, flight)
+      @drone.state_msg.should == "AT*REF=1,290718208\r"
+    end
+  end
+
+  describe '#takeoff' do
+    it 'should change the drone state to the number representing "flying"' do
+      @drone.takeoff
+      @drone.instance_variable_get(:@drone_state).should == 1 << 9
     end
   end
 
   describe '#land' do
-    before :each do
-      @drone.seq = nil
-    end
-
-    it 'should generate the correct command' do
-      @drone.land.should == "AT*REF=1,290717696\n"
+    it 'should change the drone state to the number representing "landed"' do
+      @drone.land
+      @drone.instance_variable_get(:@drone_state).should == 0
     end
   end
 
@@ -143,37 +154,43 @@ describe ARbDrone::Control do
 
   describe '#hover' do
     it 'should generate the correct command' do
-      @drone.hover.should == "AT*PCMD=1,0,0,0,0,0\n"
+      @drone.hover
+      @drone.send_queue.include?("AT*PCMD=1,0,0,0,0,0\r").should be true
     end
   end
 
   describe '#reset_trim' do
     it 'should generate the correct command' do
-      @drone.reset_trim.should == "AT*FTRIM=1,\n"
+      @drone.reset_trim
+      @drone.send_queue.include?("AT*FTRIM=1,\r").should be true
     end
   end
 
   describe '#heartbeat' do
     it 'should generate the correct command' do
-      @drone.heartbeat.should == "AT*COMWDG=1,\n"
+      @drone.heartbeat
+      @drone.send_queue.include?("AT*COMWDG=1,\r").should be true
     end
   end
 
   describe '#blink' do
     it 'should generate the correct command' do
-      @drone.blink(2,3,4).should == "AT*LED=1,2,3,4\n"
+      @drone.blink(2,3,4)
+      @drone.send_queue.include?("AT*LED=1,2,1077936128,4\r").should be true
     end
   end
 
   describe '#dance' do
     it 'should generate the correct command' do
-      @drone.dance(2,3).should == "AT*ANIM=1,2,3\n"
+      @drone.dance(2,3)
+      @drone.send_queue.include?("AT*ANIM=1,2,3\r").should be true
     end
   end
 
   describe '#set_option' do
     it 'should enclose variable names and values in double-quotes' do
-      @drone.set_option('name', 'value').should == "AT*CONFIG=1,\"name\",\"value\"\n"
+      @drone.set_option('name', 'value')
+      @drone.send_queue.include?("AT*CONFIG=1,\"name\",\"value\"\r").should be true
     end
   end
 end
