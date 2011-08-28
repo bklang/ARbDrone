@@ -21,19 +21,24 @@ class ARbDrone
 
     attr_accessor :seq
 
-    def setup(drone_ip, drone_control_port)
+    def setup(drone_ip, drone_control_port, options = {})
       @drone_ip, @drone_control_port = drone_ip, drone_control_port
       @send_queue = []
       @send_mutex = Mutex.new
 
+      @application_id = options.delete(:application_id) || 'ARbDrone'
+      @user_id        = options.delete(:user_id)        || Etc.getlogin
+      @session_id     = options.delete(:session_id)     || "#{Socket.gethostname}:#{$$}"
+
       # FIXME: Do we want to send these commands? These are not well documented.
-      # The following two lines are sent by the Linux example utility, ardrone_navigation
-      # as the first two messages sent to the drone at initialization.
+      # The following three lines are sent by the Linux example utility, ardrone_navigation
+      # as the first three messages sent to the drone at initialization.
       #push format_cmd 'AT*PMODE', 2
       #push format_cmd 'AT*MISC', '2,20,2000,3000'
+      #hover
 
-      # Tell the Drone to hover in case it is already in-flight
-      hover
+      # Inform the Drone who we are
+      config_ids @session_id, @user_id, @application_id
 
       # Invalidate all other controller sessions
       set_option 'custom:session_id', '-all'
