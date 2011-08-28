@@ -1,7 +1,7 @@
 require 'spec_helper'
 require 'arbdrone/control'
 
-class Drone
+class ControlDrone
   attr_accessor :seq, :send_queue
 
   include ARbDrone::Control
@@ -9,7 +9,7 @@ end
 
 describe ARbDrone::Control do
   before :each do
-    @drone  = Drone.new
+    @drone  = ControlDrone.new
     @drone.setup(0,0)
     @drone.send_queue = []
     @drone.seq = nil
@@ -17,12 +17,12 @@ describe ARbDrone::Control do
 
   describe '#next_seq' do
     it 'should default the sequence number to 1' do
-      drone = Drone.new
+      drone = ControlDrone.new
       drone.next_seq.should == 1
     end
 
     it 'should increment the sequence number on subsequent calls' do
-      drone = Drone.new
+      drone = ControlDrone.new
       drone.next_seq.should == 1
       seq = drone.next_seq
       seq.should > 1
