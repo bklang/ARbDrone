@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+require 'arbdrone'
+require 'pry'
+
+drone = ARbDrone.new :listen_ip => '192.168.1.2'
+Thread.new do
+  begin
+    drone.run
+  rescue => e
+    puts "EM Exception: #{e.message}"
+    puts e.backtrace.join("\n")
+  end
+end
+
+drone.pry
