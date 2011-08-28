@@ -1,5 +1,6 @@
 require 'socket'
 require 'thread'
+require 'etc'
 
 class ARbDrone
   module Control
@@ -55,7 +56,7 @@ class ARbDrone
         msg << @send_queue.shift
       end
       if msg.empty?
-        send_datagram noop_msg, @drone_ip, @drone_control_port
+        send_datagram state_msg, @drone_ip, @drone_control_port
       else
         # Send control input
         @send_mutex.synchronize do
@@ -78,14 +79,11 @@ class ARbDrone
 
     def takeoff
       # Bit 9 is 1 for takeoff
-      input = 1 << 9
-      push format_cmd *ref(input)
+      @drone_state |= 1 << 9
     end
 
     def land
-      # Bit 9 is 0 for takeoff
-      input = 0 << 9
-      push format_cmd *ref(input)
+      @drone_state = 0
     end
 
     def hover
@@ -130,20 +128,15 @@ class ARbDrone
     end
 
     def ref(input)
-      input |= REF_CONST
-      ['AT*REF', input]
+      ['AT*REF', input |= REF_CONST]
     end
 
     # Used primarily to keep the control connection alive
     # The drone expects a packet at least every 50ms or it
     # triggers the watchdog.  After 2 seconds the connection
     # is considered lost.
-    def noop_msg
-      format_cmd *ref(0)
-    end
-
-    def noop
-      push noop_msg
+    def state_msg
+      format_cmd *ref(@drone_state)
     end
 
     def float2int(float)
