@@ -1,6 +1,6 @@
 class ARbDrone
   module NavData
-    attr_accessor :drone_state
+    attr_reader :drone_state
 
     TAGS = {
       0      => :demo,
