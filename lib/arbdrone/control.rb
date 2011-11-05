@@ -74,6 +74,14 @@ class ARbDrone
       steer(@phi, @theta, @yaw, @gaz) if [@phi, @theta, @yaw, @gaz].any? {|i| i > 0 }
     end
 
+    # Tells the drone its maximum angle of deflection in radians, known as
+    # Euler angles.  Value may be a positive floating point number between 0.1 rads
+    # and 0.52 rads.  0.52 rads is approximately 30 degrees deflection while
+    # 0.09 rads is approximately 5 degrees.
+    def set_input_limit(rads)
+      set_option 'control:euler_angle_max', rads
+    end
+
     def next_seq
       @seq = @seq.nil? ? 1 : @seq + 1
     end
