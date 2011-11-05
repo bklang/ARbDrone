@@ -20,6 +20,8 @@ class ARbDrone
       :custom_cfg_get  => 6, # Send list of custom configuration IDs
     }
 
+    attr_accessor :phi, :theta, :yaw, :gaz
+
     def setup(drone_ip, drone_control_port, options = {})
       @drone_ip, @drone_control_port = drone_ip, drone_control_port
       @send_queue = []
@@ -28,6 +30,9 @@ class ARbDrone
       @application_id = options.delete(:application_id) || 'ARbDrone'
       @user_id        = options.delete(:user_id)        || Etc.getlogin
       @session_id     = options.delete(:session_id)     || "#{Socket.gethostname}:#{$$}"
+
+      # Initialize sticky inputs to 0 (centered)
+      @phi, @theta, @yaw, @gaz = 0, 0, 0, 0
 
       # FIXME: Do we want to send these commands? These are not well documented.
       # The following three lines are sent by the Linux example utility, ardrone_navigation
@@ -63,6 +68,10 @@ class ARbDrone
       @send_mutex.synchronize do
         send_datagram(msg, @drone_ip, @drone_control_port) unless msg.empty?
       end
+    end
+
+    def queue_sticky_inputs
+      steer(@phi, @theta, @yaw, @gaz) if [@phi, @theta, @yaw, @gaz].any? {|i| i > 0 }
     end
 
     def next_seq
