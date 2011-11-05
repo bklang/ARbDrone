@@ -56,13 +56,12 @@ class ARbDrone
       until (@send_queue.empty? || (msg.length + @send_queue.first.length) >= 1024) do
         msg << @send_queue.shift
       end
-      if msg.empty?
-        send_datagram state_msg, @drone_ip, @drone_control_port
-      else
-        # Send control input
-        @send_mutex.synchronize do
-          send_datagram(msg, @drone_ip, @drone_control_port) unless msg.empty?
-        end
+
+      msg = state_msg if msg.empty?
+
+      # Send control input
+      @send_mutex.synchronize do
+        send_datagram(msg, @drone_ip, @drone_control_port) unless msg.empty?
       end
     end
 
