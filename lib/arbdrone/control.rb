@@ -41,6 +41,9 @@ class ARbDrone
 
       # Invalidate all other controller sessions
       set_option 'custom:session_id', '-all'
+
+      # Take the Drone out of bootstrap mode
+      set_option 'general:navdata_demo', 'TRUE'
     end
 
     def push(msg)
