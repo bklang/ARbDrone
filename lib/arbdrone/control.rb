@@ -51,18 +51,22 @@ class ARbDrone
       set_option 'general:navdata_demo', 'TRUE'
     end
 
+    def center_sticky_inputs
+      @phi, @theta, @yaw, @gaz = 0, 0, 0, 0
+    end
+
     def push(msg)
       @send_queue << msg
     end
     alias :<< :push
 
     def send_queued_messages
-      msg = ''
+      # We always want to send at least one state message
+      msg = state_msg
+      queue_sticky_inputs
       until (@send_queue.empty? || (msg.length + @send_queue.first.length) >= 1024) do
         msg << @send_queue.shift
       end
-
-      msg = state_msg if msg.empty?
 
       # Send control input
       @send_mutex.synchronize do
@@ -95,11 +99,16 @@ class ARbDrone
     end
 
     def takeoff
+      # For safety during takeoff
+      center_sticky_inputs
+
       # Bit 9 is 1 for takeoff
       @drone_state = 1 << 9
     end
 
     def land
+      # For safety during landing
+      center_sticky_inputs
       @drone_state = 0
     end
 
@@ -167,9 +176,7 @@ class ARbDrone
       phi, theta, gaz, yaw = minmax -1.0, 1.0, phi, theta, gaz, yaw
 
       # Convert the values to IEEE 754, then cast to a signed int
-      values += [phi, theta, gaz, yaw].map { |v|
-        float2int v
-      }
+      values += [phi, theta, gaz, yaw].map { |v| float2int v }
       ['AT*PCMD', values.join(',')]
     end
 
