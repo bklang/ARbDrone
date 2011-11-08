@@ -161,7 +161,7 @@ class ARbDrone
     end
 
     def ref(input)
-      ['AT*REF', input |= REF_CONST]
+      ['AT*REF', input.to_i | REF_CONST]
     end
 
     # Used primarily to keep the control connection alive
