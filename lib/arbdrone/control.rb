@@ -32,7 +32,7 @@ class ARbDrone
       @session_id     = options.delete(:session_id)     || "#{Socket.gethostname}:#{$$}"
 
       # Initialize sticky inputs to 0 (centered)
-      @phi, @theta, @yaw, @gaz = 0, 0, 0, 0
+      center_sticky_inputs
 
       # FIXME: Do we want to send these commands? These are not well documented.
       # The following three lines are sent by the Linux example utility, ardrone_navigation
@@ -75,7 +75,7 @@ class ARbDrone
     end
 
     def queue_sticky_inputs
-      steer(@phi, @theta, @yaw, @gaz) if [@phi, @theta, @yaw, @gaz].any? {|i| i > 0 }
+      steer(@phi, @theta, @gaz, @yaw) if [@phi, @theta, @gaz, @yaw].any? {|i| i != 0 }
     end
 
     # Tells the drone its maximum angle of deflection in radians, known as
@@ -118,6 +118,13 @@ class ARbDrone
       push format_cmd *pcmd(flags, 0, 0, 0, 0)
     end
 
+    # Send input commands to the drone.  These must be repeated to have any meaningful effect.
+    # Negative values move the drone in the first direction listed below; positive values move
+    # it in the second listed direction.
+    # @param [Float]phi   Bank left/right angle. Valid inputs are between -1.0 and +1.0
+    # @param [Float]theta Tilt back/forward angle. Valid inputs are between -1.0 and +1.0
+    # @param [Float]gaz   Altitude decrease/increase. Valid inputs are between -1.0 and +1.0
+    # @param [Float]yaw   Spin left/right. Valid inputs are between -1.0 and +1.0
     def steer(phi, theta, gaz, yaw)
       # Set bit zero to one to make the drone process inputs
       flags = 1 << 0
