@@ -1,6 +1,7 @@
 require 'socket'
 require 'thread'
 require 'etc'
+require 'zlib'
 
 class ARbDrone
   module Control
@@ -138,6 +139,10 @@ class ARbDrone
     end
 
     def config_ids(sess_id, user_id, app_id)
+      # Convert strings to CRC32 representations
+      # From ARDroneLib/Soft/Lib/utils/ardrone_gen_ids.c:26
+      # FIXME: App ID should incorporate the SDK version against which it was built
+      sess_id, user_id, app_id = [sess_id, user_id, app_id].map {|id| "%08x" % Zlib::crc32(id)}
       push format_cmd 'AT*CONFIG_IDS', "#{sess_id},#{user_id},#{app_id}"
     end
 
