@@ -26,8 +26,11 @@ class ARbDrone
     attr_accessor :phi, :theta, :gaz, :yaw
 
     alias :bank :phi
+    alias :bank= :phi=
     alias :tilt :theta
+    alias :tilt= :theta=
     alias :lift :gaz
+    alias :lift= :gaz=
 
     def setup(drone_ip, drone_control_port, options = {})
       @drone_ip, @drone_control_port = drone_ip, drone_control_port
