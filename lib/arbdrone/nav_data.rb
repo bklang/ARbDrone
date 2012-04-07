@@ -107,6 +107,7 @@ class ARbDrone
     end
 
     def compare_states old_state, new_state
+      old_state ||= 0
       unless old_state == new_state
         diff = old_state ^ new_state
         changes = []
