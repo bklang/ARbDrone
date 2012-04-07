@@ -23,7 +23,11 @@ class ARbDrone
       :custom_cfg_get  => 6, # Send list of custom configuration IDs
     }
 
-    attr_accessor :phi, :theta, :yaw, :gaz
+    attr_accessor :phi, :theta, :gaz, :yaw
+
+    alias :bank :phi
+    alias :tilt :theta
+    alias :lift :gaz
 
     def setup(drone_ip, drone_control_port, options = {})
       @drone_ip, @drone_control_port = drone_ip, drone_control_port
@@ -213,7 +217,7 @@ class ARbDrone
         flag, phi, theta, gaz, yaw = data.split(',')
         phi, theta, gaz, yaw = [phi, theta, gaz, yaw].map {|i| int2float i }
         flag = flag == 1 ? "Combined" : "Progressive"
-        "Steering #{flag}: Phi: %d%% Theta: %d%% Yaw: %d%% Gaz: %d%%" % [phi * 100, theta * 100, yaw * 100, gaz * 100]
+        "Steering #{flag}: Bank: %d%% Tilt: %d%% Lift: %d%% Yaw: %d%%" % [phi * 100, theta * 100, gaz * 100, yaw * 100]
 
       when "REF"
         data = data.to_i & REF_CONST
