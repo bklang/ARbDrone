@@ -118,5 +118,20 @@ class ARbDrone
     def altitute_limited?
       @drone_state & STATE[:altitude] > 0
     end
+
+    def validate_checksum(msg, checksum)
+      # Calculated checksum
+      calc = 0;
+      # FIXME: Dunno why msg.byteslice(0, -8) returns nil
+      # Only count bytes from the portion of the message excluding the checksum itself
+      msg.byteslice(0, msg.bytesize - 8).each_byte { |c| calc += c }
+
+      # Unpack the transmitted checksum
+      checksum[:data] = checksum[:data].unpack('V').first
+
+      # Simulate integer overflow
+      calc %= (2**32-1)
+      checksum[:data] == calc % (2**32-1)
+    end
   end
 end
