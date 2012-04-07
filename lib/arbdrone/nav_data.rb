@@ -56,6 +56,7 @@ class ARbDrone
     end
 
     def receive_data(msg)
+      msg.freeze
       last_state = @drone_state
 
       ptr = 0
