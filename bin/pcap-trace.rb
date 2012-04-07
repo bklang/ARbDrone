@@ -1,9 +1,11 @@
 #!/usr/bin/env ruby
 # -*- encoding: utf-8 -*-
 require 'arbdrone/nav_data.rb'
+require 'arbdrone/control.rb'
 require 'pcap'
 
 include ARbDrone::NavData
+include ARbDrone::Control
 include Pcap
 
 # TODO: Allow configuring a live network capture by specifying an interface
@@ -18,7 +20,11 @@ cap.each do |p|
       receive_data p.udp_data
     end
     if p.ip_dst.to_s == '192.168.1.1' && p.udp_dport == 5556
-      puts p.udp_data.gsub(/\r/, "\n") unless p.udp_data =~ /^AT\*REF=\d+,\d+\r$/
+      data = p.udp_data.split /\r/
+      data.each do |d|
+        message = decode_command(d)
+        puts message if message
+      end
     end
   end
 end

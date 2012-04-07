@@ -9,6 +9,8 @@ class ARbDrone
     # control bit-field. Bits 18, 20, 22, 24 and 28 should be
     # set to 1. Other bits should be set to 0.
     REF_CONST = 290717696
+    REF_EMERG = 1 << 8
+    REF_FLYING = 1 << 9
 
     CONTROL_MODES = {
       :none            => 0, # Doing nothing
@@ -95,7 +97,7 @@ class ARbDrone
     end
 
     def toggle_state
-      push format_cmd *ref(1<<8)
+      push format_cmd *ref(REF_EMERG)
     end
 
     def takeoff
@@ -103,7 +105,7 @@ class ARbDrone
       center_sticky_inputs
 
       # Bit 9 is 1 for takeoff
-      @drone_state = 1 << 9
+      @drone_state = REF_FLYING
     end
 
     def land
@@ -176,6 +178,10 @@ class ARbDrone
       [float.to_f].pack('e').unpack('l').first
     end
 
+    def int2float(int)
+      [int.to_i].pack('l').unpack('e').first
+    end
+
     def pcmd(flags, phi, theta, gaz, yaw)
       values = [flags]
 
@@ -193,6 +199,41 @@ class ARbDrone
 
     def minmax(min, max, *args)
       args.map {|arg| arg < min ? min : arg > max ? max : arg }
+    end
+
+    def decode_command(cmd)
+      type, seq, data = cmd.match(/^AT\*([A-Z_]+)=(\d+),?(.*)?$/).captures rescue [nil, nil, nil]
+      case type
+      when "PCMD"
+        flag, phi, theta, gaz, yaw = data.split(',')
+        phi, theta, gaz, yaw = [phi, theta, gaz, yaw].map {|i| int2float i }
+        flag = flag == 1 ? "Combined" : "Progressive"
+        "Steering #{flag}: Phi: %d%% Theta: %d%% Yaw: %d%% Gaz: %d%%" % [phi * 100, theta * 100, yaw * 100, gaz * 100]
+
+      when "REF"
+        data = data.to_i & REF_CONST
+        message = [(data & REF_EMERG) > 0 ? "Emergency/Reset" : nil, (data & REF_FLYING) > 0 ? "Takeoff/Land" : nil].compact.join(" and ")
+        "State update: #{message}" unless message.empty?
+
+      when "CTRL"
+        mode, something = data.split ','
+        # The "something is not documented and appears to be always 0
+        "Control: #{CONTROL_MODES.key(mode.to_i)}#{"-- Unknown SOMETHING value?! #{something}" if something.to_i != 0}"
+
+      when "COMWDG"
+        "Communications watchdog reset"
+
+      when "CONFIG"
+        key, value = data.gsub('"', '').split ','
+        "Setting #{key} to #{value}"
+
+      when "CONFIG_IDS"
+        session, user, application = data.split ','
+        "Activating configuration for session #{session}, user #{user} and application #{application}"
+
+      else
+        cmd
+      end
     end
   end
 end
