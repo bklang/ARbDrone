@@ -57,6 +57,7 @@ class ARbDrone
 
     def receive_data(msg)
       msg.freeze
+      err = false
       last_state = @drone_state
 
       ptr = 0
@@ -79,20 +80,30 @@ class ARbDrone
 
         unless TAGS.keys.include?(option_id)
           puts "Found invalid options id: 0x%x" % option_id.inspect
+          err = true
           next
         end
 
         unless length > 0
-          puts "Found option with invalid 0 length"
+          puts "Found option #{TAGS[option_id]} with invalid 0 length"
           break
         end
 
         #puts "Decoded option #{TAGS[option_id]} with value #{data.inspect}"
         options.push :id => option_id, :length => length, :data => data
       end
+
       # Checksum is always the last option sent
       checksum = options.last
-      # FIXME: Verify message checksum
+      if checksum[:id] == TAGS.key(:checksum)
+        unless validate_checksum msg, options.last
+          puts "INVALID PACKET!"
+          err = true
+        end
+      else
+        #puts "No checksum found for this packet.  Last option was tagged #{TAGS[checksum[:id]]}"
+      end
+      puts "PACKET: #{msg.inspect}" if err
     end
 
     def compare_states old_state, new_state
