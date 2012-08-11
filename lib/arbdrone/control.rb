@@ -1,14 +1,14 @@
 require 'socket'
 require 'thread'
 require 'etc'
+require 'arbdrone/control_messages'
+require 'arbdrone/math'
 
 class ARbDrone
   module Control
+    include ARbDrone::ControlMessages
+    include ARbDrone::Math
 
-    # With SDK version 1.5, only bits 8 and 9 are used in the
-    # control bit-field. Bits 18, 20, 22, 24 and 28 should be
-    # set to 1. Other bits should be set to 0.
-    REF_CONST = 290717696
     REF_EMERG = 1 << 8
     REF_FLYING = 1 << 9
 
@@ -134,36 +134,32 @@ class ARbDrone
     end
 
     def reset_trim
-      push format_cmd 'AT*FTRIM'
+      push format_cmd *ftrim
     end
 
     def config_ids(sess_id, user_id, app_id)
-      push format_cmd 'AT*CONFIG_IDS', "#{sess_id},#{user_id},#{app_id}"
+      push format_cmd *configids(sess_id, user_id, app_id)
     end
 
     def set_option(name, value)
-      push format_cmd 'AT*CONFIG', "\"#{name}\",\"#{value}\""
+      push format_cmd *config(name, value)
     end
 
     def drone_control(mode, something = 0)
       # FIXME: What is the purpose of the second argument?
-      push format_cmd 'AT*CTRL', "#{mode},#{something}"
+      push format_cmd *ctrl(mode, something)
     end
 
     def heartbeat
-      push format_cmd 'AT*COMWDG'
+      push format_cmd *comwdg
     end
 
     def blink(animation, frequency, duration)
-      push format_cmd 'AT*LED', "#{animation},#{float2int frequency},#{duration}"
+      push format_cmd *led(animation, frequency, duration)
     end
 
     def dance(animation, duration)
-      push format_cmd 'AT*ANIM', "#{animation},#{duration}"
-    end
-
-    def ref(input)
-      ['AT*REF', input.to_i | REF_CONST]
+      push format_cmd *anim(animation, duration)
     end
 
     # Used primarily to keep the control connection alive
@@ -174,31 +170,8 @@ class ARbDrone
       format_cmd *ref(@drone_state)
     end
 
-    def float2int(float)
-      [float.to_f].pack('e').unpack('l').first
-    end
-
-    def int2float(int)
-      [int.to_i].pack('l').unpack('e').first
-    end
-
-    def pcmd(flags, phi, theta, gaz, yaw)
-      values = [flags]
-
-      # Ensure the inputs do not exceed [-1.0, 1.0]
-      phi, theta, gaz, yaw = minmax -1.0, 1.0, phi, theta, gaz, yaw
-
-      # Convert the values to IEEE 754, then cast to a signed int
-      values += [phi, theta, gaz, yaw].map { |v| float2int v }
-      ['AT*PCMD', values.join(',')]
-    end
-
     def shutdown!
       @seq = nil
-    end
-
-    def minmax(min, max, *args)
-      args.map {|arg| arg < min ? min : arg > max ? max : arg }
     end
 
     def decode_command(cmd)
