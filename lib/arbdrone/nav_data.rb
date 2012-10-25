@@ -1,5 +1,6 @@
 class ARbDrone
   module NavData
+    attr_accessor :control_channel, :toplevel
     attr_reader :drone_state
 
     TAGS = {
@@ -79,14 +80,14 @@ class ARbDrone
         ptr += length*2
 
         unless TAGS.keys.include?(option_id)
-          puts "Found invalid options id: 0x%x" % option_id.inspect
+          $stderr.puts "Found invalid options id: 0x%x" % option_id.inspect
           err = true
           next
         end
 
         unless length > 0
-          puts "Found option #{TAGS[option_id]} with invalid 0 length"
-          break
+          $stderr.puts "Found option #{TAGS[option_id]} with invalid 0 length"
+        #  break
         end
 
         #puts "Decoded option #{TAGS[option_id]} with value #{data.inspect}"
@@ -97,13 +98,13 @@ class ARbDrone
       checksum = options.last
       if checksum[:id] == TAGS.key(:checksum)
         unless validate_checksum msg, options.last
-          puts "INVALID PACKET!"
+          $stderr.puts "INVALID PACKET!"
           err = true
         end
       else
         #puts "No checksum found for this packet.  Last option was tagged #{TAGS[checksum[:id]]}"
       end
-      puts "PACKET: #{msg.inspect}" if err
+      #puts "PACKET: #{msg.inspect}" if err
     end
 
     def compare_states old_state, new_state
@@ -114,6 +115,10 @@ class ARbDrone
         STATE.each {|k,v| changes << "#{k} is now #{new_state & STATE[k] > 0 ? 1 : 0}" if diff & STATE[k] > 0}
         puts "-----------\n#{changes.join("\n")}\n-----------\n"
       end
+    end
+
+    def has_command?
+      @drone_state & STATE[:command] > 0
     end
 
     def in_bootstrap?

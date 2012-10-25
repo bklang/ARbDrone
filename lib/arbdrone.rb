@@ -22,8 +22,23 @@ class ARbDrone
   def run
     EventMachine.run do
       @control        = run_control
-      @control_config = run_control_config
       @navdata        = run_navdata
+      postinit
+    end
+  end
+
+  def postinit
+    Thread.new do
+      @control.drone_control :ack
+      @control.drone_control :ack
+      @control.drone_control :ack
+      sleep 3
+      #get_configs :get_cfg
+      #get_configs :custom_cfg_get
+      @control.drone_set_application_id
+      @control.drone_set_session_id
+      @navdata.control_channel = @control
+      @control.set_option 'general:navdata_demo', 'FALSE'
     end
   end
 
@@ -47,6 +62,23 @@ class ARbDrone
   def stop_control
     @control.land
     @control_timer.cancel
+  end
+
+  def get_configs(type)
+    puts "Getting config #{type}"
+    @control.drone_control type
+    @tcp = run_control_config
+    puts "Waiting for data to start..."
+    until @navdata.has_command?
+      sleep 0.2
+    end
+    puts "Reading data..."
+    while @navdata.has_command?
+      @control.drone_control :ack
+      sleep 0.2
+    end
+    puts "Received: #{@tcp.control_data}"
+    @tcp.close_connection
   end
 
   def run_navdata

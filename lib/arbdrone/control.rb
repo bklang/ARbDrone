@@ -37,9 +37,10 @@ class ARbDrone
       @send_queue = []
       @send_mutex = Mutex.new
 
-      @application_id = options.delete(:application_id) || 'ARbDrone'
-      @user_id        = options.delete(:user_id)        || Etc.getlogin
-      @session_id     = options.delete(:session_id)     || "#{Socket.gethostname}:#{$$}"
+      app_id  = options.delete(:application_id)  || 'ARbDrone'
+      user_id = options.delete(:user_id) || Etc.getlogin
+      sess_id = options.delete(:session_id) || "#{Socket.gethostname}:#{$$}"
+      hash_ids(sess_id, user_id, app_id)
 
       # Initialize sticky inputs to 0 (centered)
       center_sticky_inputs
@@ -47,12 +48,12 @@ class ARbDrone
       # FIXME: Do we want to send these commands? These are not well documented.
       # The following three lines are sent by the Linux example utility, ardrone_navigation
       # as the first three messages sent to the drone at initialization.
-      #push format_cmd 'AT*PMODE', 2
-      #push format_cmd 'AT*MISC', '2,20,2000,3000'
+      push format_cmd 'AT*PMODE', 2
+      push format_cmd 'AT*MISC', '2,20,2000,3000'
       #hover
 
       # Inform the Drone who we are
-      config_ids @session_id, @user_id, @application_id
+      send_config_ids
 
       # Invalidate all other controller sessions
       set_option 'custom:session_id', '-all'
@@ -69,6 +70,18 @@ class ARbDrone
       @send_queue << msg
     end
     alias :<< :push
+
+    def send_config_ids
+      config_ids @session_id, @user_id, @application_id
+    end
+
+    def drone_set_application_id
+      set_option 'custom:application_id', @application_id
+    end
+
+    def drone_set_session_id
+      set_option 'custom:session_id', @session_id
+    end
 
     def send_queued_messages
       # We always want to send at least one state message
@@ -145,12 +158,15 @@ class ARbDrone
       push format_cmd *ftrim
     end
 
-    def config_ids(sess_id, user_id, app_id)
+    def hash_ids(sess_id, user_id, app_id)
       # Convert strings to CRC32 representations
       # From ARDroneLib/Soft/Lib/utils/ardrone_gen_ids.c:26
       # FIXME: App ID should incorporate the SDK version against which it was built
-      sess_id, user_id, app_id = [sess_id, user_id, app_id].map {|id| "%08x" % Zlib::crc32(id)}
-      push format_cmd 'AT*CONFIG_IDS', "#{sess_id},#{user_id},#{app_id}"
+      @session_id, @user_id, @application_id = [sess_id, user_id, app_id].map {|id| "%08x" % Zlib::crc32(id)}
+    end
+
+    def config_ids(sess_id, user_id, app_id)
+      push format_cmd 'AT*CONFIG_IDS', "#{@session_id},#{@user_id},#{@application_id}"
     end
 
     def set_option(name, value)
@@ -159,6 +175,7 @@ class ARbDrone
 
     def drone_control(mode, something = 0)
       # FIXME: What is the purpose of the second argument?
+      mode = CONTROL_MODES[mode] if CONTROL_MODES.keys.include?(mode)
       push format_cmd *ctrl(mode, something)
     end
 
